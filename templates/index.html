@@ -1,0 +1,181 @@
+{% block body %}
+<input id='digit' type='number' value=3 size=20>
+<input id='len' type='number' value=10 size=20>
+<input id='intervalSec' type='number' value=1 size=20>
+<input type="button" value="start" onclick="start_clicked()" />
+
+<p><font id='num' color='white'>999</font></p>
+
+<input id='ans' type='number' size=20>
+<input id='send' type="button" value="send" onclick="send_clicked()" disabled/>
+
+<p id='judge'></p>
+<p id='correct'></p>
+
+<details>
+    <summary>記録</summary>
+    <canvas id="chart" width="16" height="9"></canvas>
+</details>
+<details>
+    <summary>ログイン</summary>
+    <details>
+        <summary>登録</summary>
+    </details>
+</details>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.js"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.js"></script>      
+<script>
+// 初回アクセス
+show_chart()
+
+// event
+function start_clicked(){
+    document.getElementById('ans').value = null
+    document.getElementById('correct').innerHTML = ''
+    document.getElementById('judge').innerHTML = ''
+    document.getElementById('num').innerHTML = ''
+    document.getElementById('num').color = 'black'
+
+    function doSomethingLoop(i, maxCount) {
+        if (i <= maxCount) {
+            doSomething();
+            setTimeout(function(){doSomethingLoop(++i, maxCount)}, intervalMS);
+        } else {
+            // 終了時の処理
+            document.getElementById('num').color = 'white'
+            document.getElementById('num').innerHTML = 999
+            document.getElementById('send').disabled = false
+        }
+    }
+    function doSomething() {
+        var random = Math.random();
+        random = Math.round(random * Math.pow(10, digit))       
+        document.getElementById('num').innerHTML = random
+        correct += random
+    }
+
+    digit = parseInt(document.getElementById('digit').value)
+    len = parseInt(document.getElementById('len').value)
+    intervalSec = parseFloat(document.getElementById('intervalSec').value)
+    intervalMS = intervalSec * 1000
+    correct = 0
+    doSomethingLoop(0, len-1);
+}
+
+function send_clicked() {
+    // 回答取得
+    ans = document.getElementById('ans').value
+    ans = parseInt(ans, 10)
+    // 正誤判定
+    judge_str = 'Wrong'
+    judge = 0
+    if (ans==correct){
+        judge_str = 'Correct'
+        judge = 1
+    }
+    // 結果表示
+    document.getElementById('judge').innerHTML = judge_str
+    if (judge==0){
+        document.getElementById('correct').innerHTML = correct
+    }
+
+    // dbへ送信
+    user_id = 0
+    function Date_to_String(date){  // mysqlのdatetime型のstringへ
+        y = date.getFullYear()
+        month = date.getMonth() + 1
+        d = date.getDate()
+        h = date.getHours()
+        minute = date.getMinutes()
+        s = date.getSeconds()
+        ms = date.getMilliseconds()
+        string = y+'-'+month+'-'+d+' '+h+':'+minute+':'+s
+        return string
+    }
+    date = new Date()
+    t = Date_to_String(date)
+
+    // ユーザーid, timestamp, 桁数, interval, 個数, 回答, 正答, 判定
+    // flaskにjsonを渡す
+    $.ajax({
+    type: 'POST',
+    url: '/insert',
+    data: JSON.stringify ({
+        user_id: user_id,
+        t: t,
+        digit: digit,
+        intervalSec: intervalSec,
+        len: len,
+        ans: ans,
+        correct: correct,
+        judge: judge,
+    }), 
+    success: function(data) { },
+    contentType: "application/json",
+    dataType: 'json'
+    });    
+
+    show_chart()
+    document.getElementById('send').disabled = true
+}
+
+function show_chart(){
+    // 可視化
+    $.getJSON('/user_data', (data) => {
+        var ctx = document.getElementById("chart");
+        var type = 'line'
+        var data =  {
+                labels: data['xticklabels'],
+                datasets: [
+                {
+                    label: 'play_cnt',
+                    data: data['play_cnt'],
+                    borderColor: "rgba(255,0,0,1)",
+                    backgroundColor: "rgba(0,0,0,0)"
+                },
+                {
+                    label: 'correct_cnt',
+                    data: data['correct_cnt'],
+                    borderColor: "rgba(0,0,255,1)",
+                    backgroundColor: "rgba(0,0,0,0)"
+                }
+                ],
+            },
+        options= {
+            title: {
+                display: true,
+                text: 'title'
+            },
+            /*
+            scales: {
+                yAxes: [{
+                    ticks: {
+                    suggestedMax: 40,
+                    suggestedMin: 0,
+                    stepSize: 10,
+                    callback: function(value, index, values){
+                        return  value +  '度'
+                    }
+                    }
+                }]
+            },
+            */
+        }
+
+        var myChart = new Chart(ctx, {
+            type: type,
+            data: data,
+            options: options
+        });
+    })
+}
+// 登録　ユーザー名とパス
+// ユーザーテーブル
+// ログイン
+// 設定保存　設定テーブル ユーザーごと　最後の条件を保持
+// パスワードを設定しない
+//　メモ欄　ジョギング後 調子いい気がするとか
+// カウントダウン　徐々に色が暗くなって没入感だせるといいかも
+</script>
+{% endblock %}
