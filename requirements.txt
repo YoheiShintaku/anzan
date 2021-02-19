@@ -1,5 +1,6 @@
 ###### Requirements without Version Specifiers ######`
 psycopg2
+gunicorn
 
 ###### Requirements with Version Specifiers ######`
 click==7.1.2

@@ -14,3 +14,9 @@
 ## local
 
 - 実行: `python app.py`
+
+# 本番環境
+heroku
+
+## トラブルシューティング
+`heroku logs --app=anzan`
