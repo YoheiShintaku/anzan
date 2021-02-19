@@ -37,7 +37,7 @@ def insert():  # url for で指定
     table = 'log'
     sql = f'INSERT INTO {table} {columns_str} VALUES {values_str}'
     print(sql, file=sys.stderr)
-    conn.execute(sql)
+    get_connect_obj().execute(sql)
 
     return redirect('/')
 
@@ -50,7 +50,7 @@ def user_data():  # url for で指定
     import pandas as pd
     df = pd.read_sql_query(
         sql=sql, 
-        con=engine)    
+        con=get_connect_obj())
     print(df, file=sys.stderr)
 
     dct = {
@@ -61,9 +61,8 @@ def user_data():  # url for で指定
     print(dct, file=sys.stderr)
     return jsonify(dct)
 
-## おまじない
-if __name__ == "__main__":
-    print('main')
+
+def get_connect_obj():
     def get_db_url():
         return '{database}://{db_user}:{db_password}@{db_host}:{db_port}/{db_use}{param}'.format(
 #            database='mysql+pymysql'
@@ -86,5 +85,10 @@ if __name__ == "__main__":
     engine = sqlalchemy.create_engine(db_url)
     conn = engine.connect()
     print('connected')
+    return conn
+    
+
+if __name__ == "__main__":
+    print('main')
     
     app.run(debug=True, host='0.0.0.0', port=5000)
