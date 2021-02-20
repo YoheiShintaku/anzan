@@ -1,11 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>anzan</title>
+    <link rel="stylesheet" 
+        type="text/css"
+        href="{{url_for('static', filename='style.css')}}">
+</head>
 {% block body %}
-user: <input id='user' type='text' value='yohei' size=20><br>
-len: <input id='len' type='number' value=5 size=20><br>
-<input type="checkbox" id="auto"> auto <br>
-speed: <input id='intervalSec' type='number' value=1.0 size=20><br>
-digit1: <input id='digit1' type='number' value=3 size=20><br>
-digit1_rate: <input id='digit1_rate' type='number' value=1.0 size=20><br>
-improve: <input id='improve' type='text' value='speed' size=20><br>
+<div>
+    user: <input id='user' type='text' value='yohei' size=20><br>
+    len: <input id='len' type='number' value=5 size=20><br>
+    <input type="checkbox" id="auto"> auto <br>
+    speed: <input id='intervalSec' type='number' value=1.0 size=20><br>
+    digit1: <input id='digit1' type='number' value=3 size=20><br>
+    digit1_rate: <input id='digit1_rate' type='number' value=1.0 size=20><br>
+    improve: <input id='improve' type='text' value='speed' size=20><br>
+</div>
 <input type="button" value="start" onclick="start_clicked()" /><br>
 
 <p><font id='num' color='white'>999</font></p>
@@ -99,7 +109,6 @@ function start_clicked(){
                 } else {
                     ans_array.push(value);
                 }
-                console.log(i)
             }
             // 一つだけ正解にする
             index = Math.floor(Math.random() * 3) // 0<=random<1
@@ -288,5 +297,5 @@ function show_chart(){
 //　メモ欄　ジョギング後 調子いい気がするとか
 // カウントダウン　徐々に色が暗くなって没入感だせるといいかも
 </script>
-
 {% endblock %}
+</html>
