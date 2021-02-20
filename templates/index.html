@@ -92,7 +92,7 @@ function start_clicked(){
         for (k=digit; k>0; k--){ // 各桁の数値を出す。randomは0.0..も含まれるのでこうしないと桁数制御しづらい
             tmp = Math.ceil(Math.random()*10) - 1; // 0-9
             if (tmp==0){
-                if (k==0){ // 最上位桁
+                if (k==digit){ // 最上位桁
                     tmp = 1
                 }
             }
