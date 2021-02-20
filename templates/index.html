@@ -1,8 +1,11 @@
 {% block body %}
-<input id='digit' type='number' value=3 size=20>
-<input id='len' type='number' value=10 size=20>
-<input id='intervalSec' type='number' value=1 size=20>
-<input type="button" value="start" onclick="start_clicked()" />
+user: <input id='user' type='text' value='yohei' size=20><br>
+len: <input id='len' type='number' value=5 size=20><br>
+speed: <input id='intervalSec' type='number' value=1.0 size=20><br>
+digit1: <input id='digit1' type='number' value=3 size=20><br>
+digit1_rate: <input id='digit1_rate' type='number' value=1.0 size=20><br>
+improve: <input id='improve' type='text' value='speed' size=20><br>
+<input type="button" value="start" onclick="start_clicked()" /><br>
 
 <p><font id='num' color='white'>999</font></p>
 
@@ -25,12 +28,30 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.js"></script>
 <script src="https://code.jquery.com/jquery-3.3.1.js"></script>      
+
 <script>
-// 初回アクセス
+// global
+var len;
+var intervalSec;
+var intervalMS;
+var digi1;
+var digit1_rate;
+var correct;
+
+// ユーザー設定を反映
+
+// グラフ表示
 show_chart()
 
 // event
 function start_clicked(){
+    len = parseInt(document.getElementById('len').value)
+    intervalSec = parseFloat(document.getElementById('intervalSec').value)
+    intervalMS = intervalSec * 1000
+    digit1 = parseInt(document.getElementById('digit1').value)
+    digit2 = digit1 - 1
+    digit1_rate = parseFloat(document.getElementById('digit1_rate').value)
+
     document.getElementById('ans').value = null
     document.getElementById('correct').innerHTML = ''
     document.getElementById('judge').innerHTML = ''
@@ -39,50 +60,45 @@ function start_clicked(){
 
     function doSomethingLoop(i, maxCount) {
         if (i <= maxCount) {
-            doSomething();
+            doSomething(array[i])
             setTimeout(function(){doSomethingLoop(++i, maxCount)}, intervalMS);
         } else {
             // 終了時の処理
+            at_end()
+        }
+    }
+
+    function doSomething(value) {
+        document.getElementById('num').innerHTML = value
+    }
+
+    function at_end() {
             document.getElementById('num').color = 'white'
             document.getElementById('num').innerHTML = 999
             document.getElementById('send').disabled = false
-        }
-    }
-    function doSomething() {
-        var random = Math.random();
-        random = Math.round(random * Math.pow(10, digit))       
-        document.getElementById('num').innerHTML = random
-        correct += random
     }
 
-    digit = parseInt(document.getElementById('digit').value)
-    len = parseInt(document.getElementById('len').value)
-    intervalSec = parseFloat(document.getElementById('intervalSec').value)
-    intervalMS = intervalSec * 1000
-    correct = 0
-    doSomethingLoop(0, len-1);
+    var array = new Array();
+
+    for (i=0; i < len; i++) {
+        value = Math.random();
+        if (Math.random() <= digit1_rate){ // 桁指定
+            digit = digit1
+        } else {
+            digit = digit2
+        }
+        value = Math.floor(value * Math.pow(10, digit))
+        array.push(value)
+    }
+    correct = array.reduceRight(function(a,b){return a + b;});
+
+    doSomethingLoop(0, len-1)
 }
 
-function send_clicked() {
-    // 回答取得
-    ans = document.getElementById('ans').value
-    ans = parseInt(ans, 10)
-    // 正誤判定
-    judge_str = 'Wrong'
-    judge = 0
-    if (ans==correct){
-        judge_str = 'Correct'
-        judge = 1
-    }
-    // 結果表示
-    document.getElementById('judge').innerHTML = judge_str
-    if (judge==0){
-        document.getElementById('correct').innerHTML = correct
-    }
 
-    // dbへ送信
-    user_id = 0
-    function Date_to_String(date){  // mysqlのdatetime型のstringへ
+function send_clicked() {
+    // mysqlのdatetime/postgreのtimestamp型のstringへ
+    function Date_to_String(date){  
         y = date.getFullYear()
         month = date.getMonth() + 1
         d = date.getDate()
@@ -93,6 +109,64 @@ function send_clicked() {
         string = y+'-'+month+'-'+d+' '+h+':'+minute+':'+s
         return string
     }
+
+    // 回答取得
+    ans = document.getElementById('ans').value
+    ans = parseInt(ans, 10)
+
+    // 正誤判定
+    judge_str = 'Wrong'
+    judge = 0
+    if (ans==correct){
+        judge_str = 'Correct'
+        judge = 1
+    }
+
+    // 結果表示
+    document.getElementById('judge').innerHTML = judge_str
+    if (judge==0){
+        document.getElementById('correct').innerHTML = correct
+    }
+
+    // 結果によって難易度変更
+    improve = document.getElementById('improve').value
+    switch (judge){
+        case 1: // 正解
+            switch (improve){
+                case 'speed': // 速く
+                    intervalSec = intervalSec - 0.1
+                    break;
+                case 'digit': // 桁を多く
+                    if (digit1_rate>=1){ // すでに配分がmaxなら1桁上げる
+                        digit1 = digit1 + 1
+                        digit1_rate = 0.2
+                    } else { // 配分を上げる
+                        digit1_rate = digit1_rate + 0.1
+                    }
+                    break;
+            }
+            break;
+        case 0: // 不正解
+            switch (improve){
+                case 'speed': // スピードは保持。桁を少なく
+                    if (digit1_rate >= 0.2){ // 桁が多い数字の配分を下げる
+                        digit1_rate = digit1_rate - 0.1
+                    } else { // 十分配分が低い場合、桁を下げる
+                        digit1 = digit1 - 1
+                        digit1_rate = 1.0
+                    }
+                    break;
+                case 'digit': // 遅く
+                    intervalSec = intervalSec + 0.1                    
+                    break;
+            }
+            break;
+    }
+    document.getElementById('intervalSec').value = intervalSec
+    document.getElementById('digit1').value
+    document.getElementById('digit1_rate').value = digit1_rate
+    // dbへ送信
+    user_id = 0
     date = new Date()
     t = Date_to_String(date)
 
@@ -104,7 +178,7 @@ function send_clicked() {
     data: JSON.stringify ({
         user_id: user_id,
         t: t,
-        digit: digit,
+        digit: digit1,
         intervalSec: intervalSec,
         len: len,
         ans: ans,
@@ -170,12 +244,8 @@ function show_chart(){
         });
     })
 }
-// 登録　ユーザー名とパス
-// ユーザーテーブル
-// ログイン
-// 設定保存　設定テーブル ユーザーごと　最後の条件を保持
-// パスワードを設定しない
 //　メモ欄　ジョギング後 調子いい気がするとか
 // カウントダウン　徐々に色が暗くなって没入感だせるといいかも
 </script>
+
 {% endblock %}

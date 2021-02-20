@@ -37,7 +37,10 @@ def insert():  # url for で指定
     table = 'log'
     sql = f'INSERT INTO {table} {columns_str} VALUES {values_str}'
     print(sql, file=sys.stderr)
-    get_connect_obj().execute(sql)
+    engine = get_connect_obj()
+    conn = engine.connect()
+    conn.execute(sql)
+    del conn, engine
 
     return redirect('/')
 
@@ -48,10 +51,12 @@ def user_data():  # url for で指定
     sql = f'select date(t) as d, cast(count(*) as float) as play_cnt, cast(sum(judge) as float) as correct_cnt from {table} group by 1;'
     print(sql, file=sys.stderr)
     import pandas as pd
+    engine = get_connect_obj()
+    conn = engine.connect()    
     df = pd.read_sql_query(
         sql=sql, 
-        con=get_connect_obj())
-    print(df, file=sys.stderr)
+        con=conn)
+    del conn, engine
 
     dct = {
         'xticklabels': list(df['d'].values),
@@ -83,10 +88,8 @@ def get_connect_obj():
 
     db_url = get_db_url()  # 'mysql+pymysql://root:@127.0.0.1:3306/test1230?charset=utf8'
     engine = sqlalchemy.create_engine(db_url)
-    conn = engine.connect()
-    print('connected')
-    return conn
-    
+    return engine
+
 
 if __name__ == "__main__":
     print('main')
