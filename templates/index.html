@@ -10,14 +10,16 @@ improve: <input id='improve' type='text' value='speed' size=20><br>
 
 <p><font id='num' color='white'>999</font></p>
 
-<input id='ans' type='number' size=20>
-<input id='send' type="button" value="send" onclick="send_clicked()" disabled/>
+<p id='ans1' onclick="send_clicked(this)"></p>
+<p id='ans2' onclick="send_clicked(this)"></p>
+<p id='ans3' onclick="send_clicked(this)"></p>
 
 <p id='judge'></p>
 <p id='correct'></p>
 
 <details>
     <summary>記録</summary>
+    <input type="button" value="show" onclick="show_chart()" /><br>
     <canvas id="chart" width="16" height="9"></canvas>
 </details>
 <details>
@@ -41,9 +43,6 @@ var correct;
 
 // ユーザー設定を反映
 
-// グラフ表示
-show_chart()
-
 // event
 function start_clicked(){
     len = parseInt(document.getElementById('len').value)
@@ -53,7 +52,6 @@ function start_clicked(){
     digit2 = digit1 - 1
     digit1_rate = parseFloat(document.getElementById('digit1_rate').value)
 
-    document.getElementById('ans').value = null
     document.getElementById('correct').innerHTML = ''
     document.getElementById('judge').innerHTML = ''
     document.getElementById('num').innerHTML = ''
@@ -76,7 +74,40 @@ function start_clicked(){
     function at_end() {
             document.getElementById('num').color = 'white'
             document.getElementById('num').innerHTML = 999
-            document.getElementById('send').disabled = false
+
+            // 回答の選択肢を表示
+            // 正解にノイズ付与
+            ans_array = new Array()
+            for (i=0;i<3;i++){                
+                tmp = Math.round(Math.random()*10*0.4) - 2   // -2 ~ 2
+                if (tmp==0){ // 正解と一致させない
+                    if (Math.random()>0.5){
+                        tmp = 1
+                    } else {
+                        tmp = -1
+                    }
+                }
+                value = correct + tmp
+                flg = false
+                for (k=0;k<i;k++){  // 他候補と一致するか
+                    if (value == ans_array[k]){
+                        flg = true
+                    }
+                }
+                if (flg){ // 
+                    i--; // 戻ってもう一度
+                } else {
+                    ans_array.push(value);
+                }
+                console.log(i)
+            }
+            // 一つだけ正解にする
+            index = Math.floor(Math.random() * 3) // 0<=random<1
+            ans_array[index] = correct
+            // 表示
+            document.getElementById('ans1').innerHTML = ans_array[0]
+            document.getElementById('ans2').innerHTML = ans_array[1]
+            document.getElementById('ans3').innerHTML = ans_array[2]
     }
 
     var array = new Array();
@@ -106,7 +137,7 @@ function start_clicked(){
 }
 
 
-function send_clicked() {
+function send_clicked(element) {
     // mysqlのdatetime/postgreのtimestamp型のstringへ
     function Date_to_String(date){  
         y = date.getFullYear()
@@ -121,7 +152,7 @@ function send_clicked() {
     }
 
     // 回答取得
-    ans = document.getElementById('ans').value
+    ans = element.innerHTML
     ans = parseInt(ans, 10)
 
     // 正誤判定
@@ -202,9 +233,6 @@ function send_clicked() {
     contentType: "application/json",
     dataType: 'json'
     });    
-
-    show_chart()
-    document.getElementById('send').disabled = true
 }
 
 function show_chart(){
