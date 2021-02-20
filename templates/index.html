@@ -1,6 +1,7 @@
 {% block body %}
 user: <input id='user' type='text' value='yohei' size=20><br>
 len: <input id='len' type='number' value=5 size=20><br>
+<input type="checkbox" id="auto"> auto <br>
 speed: <input id='intervalSec' type='number' value=1.0 size=20><br>
 digit1: <input id='digit1' type='number' value=3 size=20><br>
 digit1_rate: <input id='digit1_rate' type='number' value=1.0 size=20><br>
@@ -81,13 +82,22 @@ function start_clicked(){
     var array = new Array();
 
     for (i=0; i < len; i++) {
-        value = Math.random();
-        if (Math.random() <= digit1_rate){ // 桁指定
+        tmp = Math.random()
+        if (tmp <= digit1_rate){ // 桁指定
             digit = digit1
         } else {
             digit = digit2
         }
-        value = Math.floor(value * Math.pow(10, digit))
+        value = 0
+        for (k=digit; k>0; k--){ // 各桁の数値を出す。randomは0.0..も含まれるのでこうしないと桁数制御しづらい
+            tmp = Math.ceil(Math.random()*10) - 1; // 0-9
+            if (tmp==0){
+                if (k==0){ // 最上位桁
+                    tmp = 1
+                }
+            }
+            value += tmp * Math.pow(10, k-1)
+        }
         array.push(value)
     }
     correct = array.reduceRight(function(a,b){return a + b;});
@@ -129,42 +139,45 @@ function send_clicked() {
     }
 
     // 結果によって難易度変更
-    improve = document.getElementById('improve').value
-    switch (judge){
-        case 1: // 正解
-            switch (improve){
-                case 'speed': // 速く
-                    intervalSec = intervalSec - 0.1
-                    break;
-                case 'digit': // 桁を多く
-                    if (digit1_rate>=1){ // すでに配分がmaxなら1桁上げる
-                        digit1 = digit1 + 1
-                        digit1_rate = 0.2
-                    } else { // 配分を上げる
-                        digit1_rate = digit1_rate + 0.1
-                    }
-                    break;
-            }
-            break;
-        case 0: // 不正解
-            switch (improve){
-                case 'speed': // スピードは保持。桁を少なく
-                    if (digit1_rate >= 0.2){ // 桁が多い数字の配分を下げる
-                        digit1_rate = digit1_rate - 0.1
-                    } else { // 十分配分が低い場合、桁を下げる
-                        digit1 = digit1 - 1
-                        digit1_rate = 1.0
-                    }
-                    break;
-                case 'digit': // 遅く
-                    intervalSec = intervalSec + 0.1                    
-                    break;
-            }
-            break;
+    if (document.getElementById('auto').checked){
+        improve = document.getElementById('improve').value
+        switch (judge){
+            case 1: // 正解
+                switch (improve){
+                    case 'speed': // 速く
+                        intervalSec = intervalSec - 0.1
+                        break;
+                    case 'digit': // 桁を多く
+                        if (digit1_rate>=1){ // すでに配分がmaxなら1桁上げる
+                            digit1 = digit1 + 1
+                            digit1_rate = 0.2
+                        } else { // 配分を上げる
+                            digit1_rate = digit1_rate + 0.1
+                        }
+                        break;
+                }
+                break;
+            case 0: // 不正解
+                switch (improve){
+                    case 'speed': // スピードは保持。桁を少なく
+                        if (digit1_rate >= 0.2){ // 桁が多い数字の配分を下げる
+                            digit1_rate = digit1_rate - 0.1
+                        } else { // 十分配分が低い場合、桁を下げる
+                            digit1 = digit1 - 1
+                            digit1_rate = 1.0
+                        }
+                        break;
+                    case 'digit': // 遅く
+                        intervalSec = intervalSec + 0.1                    
+                        break;
+                }
+                break;
+        }
+        document.getElementById('intervalSec').value = intervalSec
+        document.getElementById('digit1').value
+        document.getElementById('digit1_rate').value = digit1_rate
     }
-    document.getElementById('intervalSec').value = intervalSec
-    document.getElementById('digit1').value
-    document.getElementById('digit1_rate').value = digit1_rate
+
     // dbへ送信
     user_id = 0
     date = new Date()
