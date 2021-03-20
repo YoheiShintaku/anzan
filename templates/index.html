@@ -18,17 +18,18 @@
     </div>
 </div>
 <input type="button" value="start" onclick="start_clicked()" /><br>
-
+<input type="button" id="auto" value="auto" onclick="auto_clicked()" /><br>
 
 <div class='set'>
     user: <input id='user' type='text' value='yohei' size=20><br>
     len: <input id='len' type='number' value=5 step=1 size=20><br>
-    <input id="auto" type="checkbox"> auto <br>
     speed: <input id='intervalSec' type='number' value=1.0 step=0.1 size=20><br>
+    speed_step: <input id='speed_step' type='number' value=0.1 step=0.05 size=20><br>
     digit1: <input id='digit1' type='number' value=3 step=1 size=20><br>
     digit1_rate: <input id='digit1_rate' type='number' value=1.0 step=0.1 size=20><br>
     improve: <input id='improve' type='text' value='speed' size=20><br>
 </div>
+
 
 <details>
     <summary>記録</summary>
@@ -58,39 +59,61 @@ var intervalMS;
 var digit1;
 var digit1_rate;
 var digit2;
-var improve = "{{ improve }}"
-var auto = "{{ auto }}".toLowerCase() === 'true'
+var improve;
+var auto;
 var correct;
-var wait_sec = 3
+var last_cleared_speed; 
+var last_missed_speed; 
+var auto_mode;  // step通り進むモード or 微調整モード
+var auto_cnt;
+var auto_miss_cnt;
+var wait_sec = 3;
+var allow_miss_cnt = 0;
+var clear_cnt;
 
+// ページを訪れたとき
+init()
+function init(){
+    console.log('init')
+    init_auto()
 
-// ユーザー設定を反映
-// get_setting()
+    // ユーザー設定を反映
+    // get_setting()
+}
+
+function init_auto(){
+    console.log('init_auto')
+    // 訪問時 or OFF->ON
+    auto = 1
+    auto_button_style = "background-color: blue;"
+    document.getElementById("auto").style = auto_button_style
+
+    auto_mode = 0 // 初期stepモード 失敗確定したら1:調整モードへ以降
+    auto_miss_cnt = 0
+    clear_cnt = 0
+}
+
+function auto_clicked(){
+    console.log('auto_clicked')
+    // 反転
+    if (auto == 1){ // ONからOFF
+        auto = 0
+        auto_button_style = "background-color: grey;"
+        document.getElementById("auto").style = auto_button_style
+    } else if (auto == 0){ // OFFからON
+        init_auto()
+    }
+}
+
 function get_setting(){
     $.getJSON('/get_setting?user_id=0', (data) => {
         var ctx = document.getElementById("chart");
     })
 }
 
-function get_setting_from_document(){
-    len = document.getElementById('len').value
-    digit1 = document.getElementById('digit1').value
-    digit1_rate = document.getElementById('digit1_rate').value
-    intervalSec = document.getElementById('intervalSec').value
-    auto = document.getElementById('auto').checked
-    improve = document.getElementById('improve').value
-}
-
-function set_setting_to_document(){
-    document.getElementById('len').value = len
-    document.getElementById('digit1').value = digit1
-    document.getElementById('digit1_rate').value = digit1_rate
-    document.getElementById('intervalSec').value = intervalSec
-    document.getElementById('auto').checked = auto
-    document.getElementById('improve').value = improve
-}
-
 function start_clicked(){
+    console.log('start_clicked')
+
     get_setting_from_document()
 
     // 直近の設定をdbに保存
@@ -98,6 +121,30 @@ function start_clicked(){
 
     // 暗算開始
     play()
+}
+
+function get_setting_from_document(){
+    len = parseInt(document.getElementById('len').value)
+    digit1 = parseInt(document.getElementById('digit1').value)
+    digit1_rate = parseFloat(document.getElementById('digit1_rate').value)
+    intervalSec = parseFloat(document.getElementById('intervalSec').value)
+    speed_step = parseFloat(document.getElementById('speed_step').value)
+    improve = document.getElementById('improve').value
+
+    intervalMS = intervalSec * 1000
+    digit2 = digit1 - 1
+    if (digit2==0) {digit2 = 1}
+}
+
+function set_setting_to_document(){
+    console.log('set_setting_to_document')
+    console.log('intervalSec', intervalSec)
+    document.getElementById('len').value = len
+    document.getElementById('digit1').value = digit1
+    document.getElementById('digit1_rate').value = digit1_rate
+    document.getElementById('intervalSec').value = intervalSec
+    document.getElementById('speed_step').value = speed_step
+    document.getElementById('improve').value = improve
 }
 
 function send_setting(){
@@ -122,10 +169,6 @@ function send_setting(){
 }
 
 function play(){
-    intervalMS = intervalSec * 1000
-    digit2 = digit1 - 1
-    if (digit2==0) {digit2 = 1}
-
     document.getElementById('num').innerHTML = ''
     document.getElementById('talk').innerHTML = ''
     document.getElementById('correct').innerHTML = ''
@@ -222,10 +265,11 @@ function Date_to_String(date){
 }
 
 function send_clicked(element) {
+    console.log('send_clicked')
     get_result(element);
     show_result();
 
-    if (auto){
+    if (auto == 1){
         // 結果によって難易度変更
         get_next_setting()
         set_setting_to_document()
@@ -260,7 +304,71 @@ function show_result(element) {
     }
 }
 
+
 function get_next_setting() {
+    console.log('get_next_setting')
+    console.log('auto_mode', auto_mode)
+    // まずはspeedのみ
+    // auto_modeの分岐
+    // 成功/失敗の分岐
+    switch (is_correct){
+        case 1: // 成功
+            console.log('is_correct = 1')
+            after_clear()
+            break;
+        case 0: // 失敗
+            console.log('is_correct = 0')
+            after_miss()
+            break;
+        break;
+    }
+}
+
+function after_clear(){
+    clear_cnt++
+    // step分だけスピードを早くする
+    // 成功の最高を更新
+    last_cleared_speed = intervalSec
+    // miss_cntのリセット
+    auto_miss_cnt = 0
+    // speedを早くする
+    switch (auto_mode){
+        case 0:
+            intervalSec = intervalSec - speed_step
+            break;
+        case 1:
+            intervalSec = (intervalSec + last_missed_speed) / 2    
+            break;
+    }
+}
+
+function after_miss(){
+    // miss_cntの積み上げ
+    auto_miss_cnt += 1
+    if (auto_miss_cnt > allow_miss_cnt){ // 2回目なら失敗確定。調整モードへ以降
+        console.log('auto_miss_cnt > allow_miss_cnt')
+        auto_miss_cnt = 0 // リセット
+        last_missed_speed = intervalSec // 失敗の最高
+        switch (auto_mode){
+            case 0: // stepモード
+                auto_mode = 1 // 次からは調整モード
+                // speedを遅くする
+                if (clear_cnt == 0){
+                    // これまで1回もクリアしてない場合、last_cleared_speedはnull
+                    intervalSec = intervalSec + speed_step
+                } else {
+                    intervalSec = (last_cleared_speed + last_missed_speed) / 2.0
+                }
+                break;
+            case 1: // 調整モード
+                // speedを遅くする
+                intervalSec = (intervalSec + last_cleared_speed) / 2
+                break;
+        }
+    }            
+}
+
+function get_next_setting_old() {
     console.log('switch (is_correct)')
     switch (is_correct){
         case 1: // 正解
@@ -305,6 +413,7 @@ function get_next_setting() {
 }
 
 function send_result() {
+    console.log('send_result')
     // dbへ送信
     user_id = 0
     date = new Date()
