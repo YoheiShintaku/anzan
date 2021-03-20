@@ -7,8 +7,20 @@
         href="{{url_for('static', filename='style.css')}}">
 </head>
 {% block body %}
+<div class='q'>
+    <p><font id='num'></font></p>
+    <div class='a'>
+        <p id='talk'></p>
+        <p id='correct'></p>
+        <p id='ans1' onclick="send_clicked(this)"></p>
+        <p id='ans2' onclick="send_clicked(this)"></p>
+        <p id='ans3' onclick="send_clicked(this)"></p>
+    </div>
+</div>
+<input type="button" value="start" onclick="start_clicked()" /><br>
+
+
 <div class='set'>
-<form action='/play' method="GET">
     user: <input id='user' type='text' value='yohei' size=20><br>
     len: <input id='len' type='number' value=5 step=1 size=20><br>
     <input id="auto" type="checkbox"> auto <br>
@@ -16,10 +28,7 @@
     digit1: <input id='digit1' type='number' value=3 step=1 size=20><br>
     digit1_rate: <input id='digit1_rate' type='number' value=1.0 step=0.1 size=20><br>
     improve: <input id='improve' type='text' value='speed' size=20><br>
-    <input type="submit" value="start" onclick="start_clicked()"/><br>
-</form>
 </div>
-
 
 <details>
     <summary>記録</summary>
@@ -35,7 +44,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.js"></script>
 <script src="https://code.jquery.com/jquery-3.3.1.js"></script>      
-
 <script>
 // global
 var len;
@@ -44,28 +52,56 @@ var intervalMS;
 var digi1;
 var digit1_rate;
 var correct;
+var len;
+var intervalSec;
+var intervalMS;
+var digit1;
+var digit1_rate;
+var digit2;
+var improve = "{{ improve }}"
+var auto = "{{ auto }}".toLowerCase() === 'true'
+var correct;
+var wait_sec = 3
+
 
 // ユーザー設定を反映
-get_setting()
-
+// get_setting()
 function get_setting(){
     $.getJSON('/get_setting?user_id=0', (data) => {
         var ctx = document.getElementById("chart");
-        console.log(data['len'])
     })
 }
 
-function start_clicked(){
+function get_setting_from_document(){
     len = document.getElementById('len').value
     digit1 = document.getElementById('digit1').value
     digit1_rate = document.getElementById('digit1_rate').value
     intervalSec = document.getElementById('intervalSec').value
     auto = document.getElementById('auto').checked
     improve = document.getElementById('improve').value
-    console.log(len)
-    console.log(auto)
-    
-    // insert setting
+}
+
+function set_setting_to_document(){
+    document.getElementById('len').value = len
+    document.getElementById('digit1').value = digit1
+    document.getElementById('digit1_rate').value = digit1_rate
+    document.getElementById('intervalSec').value = intervalSec
+    document.getElementById('auto').checked = auto
+    document.getElementById('improve').value = improve
+}
+
+function start_clicked(){
+    get_setting_from_document()
+
+    // 直近の設定をdbに保存
+    // send_setting()
+
+    // 暗算開始
+    play()
+}
+
+function send_setting(){
+    // send setting to db
     user_id = 0
     $.ajax({
         type: 'POST',
@@ -83,6 +119,215 @@ function start_clicked(){
         contentType: "application/json",
         dataType: 'json'
         });
+}
+
+function play(){
+    intervalMS = intervalSec * 1000
+    digit2 = digit1 - 1
+    if (digit2==0) {digit2 = 1}
+
+    document.getElementById('num').innerHTML = ''
+    document.getElementById('talk').innerHTML = ''
+    document.getElementById('correct').innerHTML = ''
+
+    function doSomethingLoop(i, maxCount) {
+        if (i <= maxCount) {
+            if (i >= wait_sec){doSomething(array[i-wait_sec])}
+            else {doSomething(wait_sec-i)}
+            setTimeout(function(){doSomethingLoop(++i, maxCount)}, intervalMS);
+        } else {
+            // 終了時の処理
+            at_end()
+        }
+    }
+
+    function doSomething(value) {
+        document.getElementById('num').innerHTML = value
+    }
+
+    function at_end() {
+            // 回答の選択肢を表示
+            // 正解にノイズ付与
+            ans_array = new Array()
+            for (i=0;i<3;i++){                
+                tmp = Math.round(Math.random()*10*0.4) - 2   // -2 ~ 2
+                if (tmp==0){ // 正解と一致させない
+                    if (Math.random()>0.5){
+                        tmp = 1
+                    } else {
+                        tmp = -1
+                    }
+                }
+                value = correct + tmp
+                flg = false
+                for (k=0;k<i;k++){  // 他候補と一致するか
+                    if (value == ans_array[k]){
+                        flg = true
+                    }
+                }
+                if (flg){ // 
+                    i--; // 戻ってもう一度
+                } else {
+                    ans_array.push(value);
+                }
+            }
+            // 一つだけ正解にする
+            index = Math.floor(Math.random() * 3) // 0<=random<1
+            ans_array[index] = correct
+            // 表示
+            document.getElementById('num').innerHTML = ''
+            document.getElementById('talk').innerHTML = 'select your answer'
+            document.getElementById('ans1').innerHTML = ans_array[0]
+            document.getElementById('ans2').innerHTML = ans_array[1]
+            document.getElementById('ans3').innerHTML = ans_array[2]
+    }
+
+    var array = new Array();
+
+    for (i=0; i < len; i++) {
+        tmp = Math.random()
+        if (tmp <= digit1_rate){ // 桁指定
+            digit = digit1
+        } else {
+            digit = digit2
+        }
+        value = 0
+        for (k=digit; k>0; k--){ // 各桁の数値を出す。randomは0.0..も含まれるのでこうしないと桁数制御しづらい
+            tmp = Math.ceil(Math.random()*10) - 1; // 0-9
+            if (tmp==0){
+                if (k==digit){ // 最上位桁
+                    tmp = 1
+                }
+            }
+            value += tmp * Math.pow(10, k-1)
+        }
+        array.push(value)
+    }
+    correct = array.reduceRight(function(a,b){return a + b;});
+
+    doSomethingLoop(0, len-1+wait_sec)
+}
+
+// mysqlのdatetime/postgreのtimestamp型のstringへ
+function Date_to_String(date){  
+    y = date.getFullYear()
+    month = date.getMonth() + 1
+    d = date.getDate()
+    h = date.getHours()
+    minute = date.getMinutes()
+    s = date.getSeconds()
+    ms = date.getMilliseconds()
+    string = y+'-'+month+'-'+d+' '+h+':'+minute+':'+s
+    return string
+}
+
+function send_clicked(element) {
+    get_result(element);
+    show_result();
+
+    if (auto){
+        // 結果によって難易度変更
+        get_next_setting()
+        set_setting_to_document()
+    }
+    send_result()
+}
+
+function get_result(element) {
+   // 回答取得
+   ans = element.innerHTML
+    ans = parseInt(ans, 10)
+
+    // 正誤判定
+    judge_str = 'Wrong'
+    is_correct = 0
+    if (ans==correct){
+        judge_str = 'Correct'
+        is_correct = 1
+    }
+}
+
+function show_result(element) {
+    // 選択肢の表示を消す
+    document.getElementById('ans1').innerHTML = ''
+    document.getElementById('ans2').innerHTML = ''
+    document.getElementById('ans3').innerHTML = ''
+
+    // 結果表示
+    document.getElementById('talk').innerHTML = judge_str
+    if (is_correct==0){
+        document.getElementById('correct').innerHTML = correct
+    }
+}
+
+function get_next_setting() {
+    console.log('switch (is_correct)')
+    switch (is_correct){
+        case 1: // 正解
+            console.log('is_correct = 1')
+            console.log('switch (improve)')
+            switch (improve){
+                case 'speed': // 速く
+                    console.log('improve = speed')
+                    intervalSec = intervalSec - 0.1
+                    break;
+                case 'digit': // 桁を多く
+                    console.log('improve = digit')
+                    if (digit1_rate>=1){ // すでに配分がmaxなら1桁上げる
+                        digit1 = digit1 + 1
+                        digit1_rate = 0.2
+                    } else { // 配分を上げる
+                        digit1_rate = digit1_rate + 0.1
+                    }
+                    break;
+            }
+            break;
+        case 0: // 不正解
+            console.log('is_correct = 0')
+            console.log('switch (improve)')
+            switch (improve){
+                case 'speed': // スピードは保持。桁を少なく
+                    console.log('improve = speed')
+                    if (digit1_rate >= 0.2){ // 桁が多い数字の配分を下げる
+                        digit1_rate = digit1_rate - 0.1
+                    } else { // 十分配分が低い場合、桁を下げる
+                        digit1 = digit1 - 1
+                        digit1_rate = 1.0
+                    }
+                    break;
+                case 'digit': // 遅く
+                    console.log('improve = digit')
+                    intervalSec = intervalSec + 0.1                    
+                    break;
+            }
+            break;
+    }
+}
+
+function send_result() {
+    // dbへ送信
+    user_id = 0
+    date = new Date()
+    t = Date_to_String(date)
+    // ユーザーid, timestamp, 桁数, interval, 個数, 回答, 正答, 判定
+    // flaskにjsonを渡す
+    $.ajax({
+    type: 'POST',
+    url: '/insert',
+    data: JSON.stringify ({
+        user_id: user_id,
+        t: t,
+        digit: digit1,
+        intervalSec: intervalSec,
+        len: len,
+        ans: ans,
+        correct: correct,
+        judge: is_correct,
+    }),
+    success: function(data) { },
+    contentType: "application/json",
+    dataType: 'json'
+    });
 }
 
 function show_chart(){
@@ -135,6 +380,8 @@ function show_chart(){
         });
     })
 }
+
+
 //　メモ欄　ジョギング後 調子いい気がするとか
 // カウントダウン　徐々に色が暗くなって没入感だせるといいかも
 </script>
