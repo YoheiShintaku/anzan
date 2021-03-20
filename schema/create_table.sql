@@ -13,6 +13,7 @@ CREATE TABLE log (
 );
 
 -- heroku
+-- d7d7jfml0mg7e7
 CREATE TABLE log (
   user_id integer,
   t timestamp,
@@ -23,3 +24,24 @@ CREATE TABLE log (
   correct integer,
   judge integer
 );
+
+CREATE TABLE users (
+  user_id integer,
+  name varchar,
+  pass varchar,
+  created timestamp,
+  updated timestamp
+);
+ALTER TABLE users ADD PRIMARY KEY(user_id);
+
+CREATE TABLE setting (
+  user_id integer,
+  len integer,
+  intervalSec float,
+  digit1 integer,
+  digit1_rate float,
+  auto boolean,
+  improve varchar,
+  updated timestamp
+);
+ALTER TABLE setting ADD PRIMARY KEY(user_id);

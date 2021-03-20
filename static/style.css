@@ -4,11 +4,24 @@ body {
 	font-family: Meiryo;
 	text-align: center;
 }
-
-div {
+.set {
 	background: rgb(223, 223, 188);
 	width: 300px;
 	padding: 10px;
 	border: 1px solid #cccccc;
 	margin: 30px auto;
+}
+
+.q {
+	background: rgb(43, 219, 247);
+	width: 300px;
+	padding: 10px;
+	border: 1px solid #cccccc;
+	margin: 30px auto;
+	color: white;
+	font-size: 70px;
+}
+
+.a {
+	font-size: 20px;
 }
