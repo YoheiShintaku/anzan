@@ -12,7 +12,7 @@
     <p><font id='num'></font></p>
     </div>
 </div>
-<input type='button' value='START' style="width: 600px;" onclick="start_clicked()"><br>
+<input type='button' id='start' value='START' style="width: 600px;" onclick="start_clicked()"><br>
 <input id='ans' type='number' style="width: 600px;"><br>
 <details>
     <summary><font color='grey'>SETTING</font></summary>
@@ -208,6 +208,7 @@ function play(){
             ans_array[index] = correct
             // 表示
             document.getElementById('num').innerHTML = ''
+            document.getElementById('ans').focus()
     }
 
     var array = new Array();
@@ -291,6 +292,7 @@ function show_result(element) {
     if (is_correct==0){
         document.getElementById('num').innerHTML = judge_str+ "\n" + correct
     } 
+    document.getElementById('start').focus()
     show_chart()
 }
 
