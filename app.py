@@ -86,7 +86,8 @@ def insert():  # url for で指定
 def user_data():  # url for で指定
     print('/user_data', file=sys.stderr)
     table = 'log'
-    sql = f'select date(t) as d, cast(count(*) as float) as play_cnt, cast(sum(judge) as float) as correct_cnt from {table} group by 1;'
+#    sql = f'select date(t) as d, cast(count(*) as float) as play_cnt, cast(sum(judge) as float) as correct_cnt from {table} group by 1;'
+    sql = f'select date(t) as x, 1 / intervalSec as y, cast(sum(judge) as float) as r from {table} group by 1,2;'
     print(sql, file=sys.stderr)
     import pandas as pd
     engine = get_connect_obj()
@@ -96,6 +97,21 @@ def user_data():  # url for で指定
         con=conn)
     del conn, engine
 
+    flags = (pd.to_datetime(df['x']) > '2021-04-01')
+    df = df[flags]
+
+    flags = (df['y'] > 0) & (df['y'] < 10)
+    df = df[flags]
+
+    df['x'] = (df['x'] - df['x'].min()).dt.days
+    ls = [{'x': sr['x'], 
+            'y': sr['y'], 
+            'r': sr['r']} for _, sr in df.iterrows()]
+#    print(ls, file=sys.stderr)
+    return jsonify(ls)
+
+    '''
+    # line plot
     dct = {
         'xticklabels': list(df['d'].values),
         'play_cnt': list(df['play_cnt'].values),
@@ -103,6 +119,7 @@ def user_data():  # url for で指定
         }
     print(dct, file=sys.stderr)
     return jsonify(dct)
+    '''    
 
 
 # 現在不使用 --------------

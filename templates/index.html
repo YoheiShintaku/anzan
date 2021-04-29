@@ -14,7 +14,7 @@
         <p id='correct'></p>
     </div>
 </div>
-<input id='ans' type='number' size=20 onclick="send_clicked()"><br>
+<input id='ans' type='number' size=20><br>
 <input type="button" value="start" onclick="start_clicked()" /><br>
 <input type="button" id="auto" value="auto" onclick="auto_clicked()" /><br>
 
@@ -28,18 +28,7 @@
     improve: <input id='improve' type='text' value='speed' size=20><br>
 </div>
 
-
-<details>
-    <summary>記録</summary>
-    <input type="button" value="show" onclick="show_chart()" /><br>
-    <canvas id="chart" width="16" height="9"></canvas>
-</details>
-<details>
-    <summary>ログイン</summary>
-    <details>
-        <summary>登録</summary>
-    </details>
-</details>
+<canvas id="chart" width="16" height="9"></canvas>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.js"></script>
 <script src="https://code.jquery.com/jquery-3.3.1.js"></script>      
@@ -74,6 +63,7 @@ init()
 function init(){
     console.log('init')
     init_auto()
+    show_chart()
 
     // ユーザー設定を反映
     // get_setting()
@@ -300,6 +290,7 @@ function show_result(element) {
     if (is_correct==0){
         document.getElementById('correct').innerHTML = correct
     }
+    show_chart()
 }
 
 
@@ -439,50 +430,40 @@ function send_result() {
 
 function show_chart(){
     // 可視化
+    console.log('show_chart')
     $.getJSON('/user_data', (data) => {
         var ctx = document.getElementById("chart");
-        var type = 'line'
-        var data =  {
-                labels: data['xticklabels'],
-                datasets: [
-                {
-                    label: 'play_cnt',
-                    data: data['play_cnt'],
-                    borderColor: "rgba(255,0,0,1)",
-                    backgroundColor: "rgba(0,0,0,0)"
-                },
-                {
-                    label: 'correct_cnt',
-                    data: data['correct_cnt'],
-                    borderColor: "rgba(0,0,255,1)",
-                    backgroundColor: "rgba(0,0,0,0)"
-                }
-                ],
-            },
+        var type = 'bubble'
+        var bubble_data = {
+            datasets: [{
+                data: data,
+                backgroundColor: 'rgb(102, 102, 255)',
+                label: 'correct counts'
+                    }]
+        };
+
         options= {
             title: {
                 display: true,
-                text: 'title'
+                text: 'log'
             },
-            /*
             scales: {
                 yAxes: [{
-                    ticks: {
-                    suggestedMax: 40,
-                    suggestedMin: 0,
-                    stepSize: 10,
-                    callback: function(value, index, values){
-                        return  value +  '度'
-                    }
-                    }
-                }]
-            },
-            */
+                    scaleLabel:{
+                        display: true,
+                        labelString: "speed"
+                    }}],
+                xAxes: [{
+                    scaleLabel:{
+                        display: true,
+                        labelString: "date"
+                    }}],
+            }
         }
 
         var myChart = new Chart(ctx, {
             type: type,
-            data: data,
+            data: bubble_data,
             options: options
         });
     })
