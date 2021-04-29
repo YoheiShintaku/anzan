@@ -12,14 +12,27 @@ body {
 	margin: 30px auto;
 }
 
+
+.c{
+	margin: 10px auto;
+	width: 600px;
+	height: 400px;
+}	
+.outer{
+	display: table;
+	margin: 10px auto;
+}
+
 .q {
+	display: table-cell;
+	width: 600px;
+	height: 400px;
+	vertical-align: middle;
 	background: rgb(43, 219, 247);
-	width: 300px;
-	padding: 10px;
 	border: 1px solid #cccccc;
-	margin: 30px auto;
 	color: white;
-	font-size: 70px;
+	font-size: 100px;
+	text-align: center;
 }
 
 .a {

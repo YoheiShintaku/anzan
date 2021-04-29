@@ -7,29 +7,32 @@
         href="{{url_for('static', filename='style.css')}}">
 </head>
 {% block body %}
-<div class='q'>
+<div class='outer'>
+    <div class='q'>
     <p><font id='num'></font></p>
-    <div class='a'>
-        <p id='talk'></p>
-        <p id='correct'></p>
     </div>
 </div>
-<input id='ans' type='number' size=20><br>
-<input type="button" value="start" onclick="start_clicked()" /><br>
-<input type="button" id="auto" value="auto" onclick="auto_clicked()" /><br>
-
-<div class='set'>
-    user: <input id='user' type='text' value='yohei' size=20><br>
-    len: <input id='len' type='number' value=5 step=1 size=20><br>
-    speed: <input id='intervalSec' type='number' value=1.0 step=0.1 size=20><br>
-    speed_step: <input id='speed_step' type='number' value=0.1 step=0.05 size=20><br>
-    digit1: <input id='digit1' type='number' value=3 step=1 size=20><br>
-    digit1_rate: <input id='digit1_rate' type='number' value=1.0 step=0.1 size=20><br>
-    improve: <input id='improve' type='text' value='speed' size=20><br>
+<input type='button' value='START' style="width: 600px;" onclick="start_clicked()"><br>
+<input id='ans' type='number' style="width: 600px;"><br>
+<details>
+    <summary><font color='grey'>SETTING</font></summary>
+    <input type="button" id="auto" value="auto" onclick="auto_clicked()" /><br>
+    <div class='set'>
+        user: <input id='user' type='text' value='yohei' size=20><br>
+        len: <input id='len' type='number' value=10 step=1 size=20><br>
+        speed: <input id='intervalSec' type='number' value=0.5 step=0.1 size=20><br>
+        speed_step: <input id='speed_step' type='number' value=0.1 step=0.05 size=20><br>
+        digit1: <input id='digit1' type='number' value=3 step=1 size=20><br>
+        digit1_rate: <input id='digit1_rate' type='number' value=1.0 step=0.1 size=20><br>
+        improve: <input id='improve' type='text' value='speed' size=20><br>
+    </div>
+</details>
+<div class='c'>
+    <details>
+        <summary><font color='grey'>RECORD</font></summary>
+        <canvas id="chart" width="16" height="9"></canvas>
+    </details>
 </div>
-
-<canvas id="chart" width="16" height="9"></canvas>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.js"></script>
 <script src="https://code.jquery.com/jquery-3.3.1.js"></script>      
 <script>
@@ -62,7 +65,6 @@ var clear_cnt;
 init()
 function init(){
     console.log('init')
-    init_auto()
     show_chart()
 
     // ユーザー設定を反映
@@ -101,6 +103,7 @@ function get_setting(){
 
 function start_clicked(){
     console.log('start_clicked')
+    document.getElementById('ans').value = ""
 
     get_setting_from_document()
 
@@ -158,8 +161,6 @@ function send_setting(){
 
 function play(){
     document.getElementById('num').innerHTML = ''
-    document.getElementById('talk').innerHTML = ''
-    document.getElementById('correct').innerHTML = ''
 
     function doSomethingLoop(i, maxCount) {
         if (i <= maxCount) {
@@ -286,10 +287,10 @@ function get_result(element) {
 
 function show_result(element) {
     // 結果表示
-    document.getElementById('talk').innerHTML = judge_str
+    document.getElementById('num').innerHTML = judge_str
     if (is_correct==0){
-        document.getElementById('correct').innerHTML = correct
-    }
+        document.getElementById('num').innerHTML = judge_str+ "\n" + correct
+    } 
     show_chart()
 }
 
