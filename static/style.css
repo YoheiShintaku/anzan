@@ -5,7 +5,7 @@ body {
 	text-align: center;
 }
 .set {
-	background: rgb(223, 223, 188);
+	background: rgb(43, 219, 247);
 	width: 300px;
 	padding: 10px;
 	border: 1px solid #cccccc;
@@ -23,5 +23,6 @@ body {
 }
 
 .a {
+	background: rgb(43, 219, 247);
 	font-size: 20px;
 }

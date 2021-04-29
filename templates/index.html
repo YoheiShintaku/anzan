@@ -12,11 +12,9 @@
     <div class='a'>
         <p id='talk'></p>
         <p id='correct'></p>
-        <p id='ans1' onclick="send_clicked(this)"></p>
-        <p id='ans2' onclick="send_clicked(this)"></p>
-        <p id='ans3' onclick="send_clicked(this)"></p>
     </div>
 </div>
+<input id='ans' type='number' size=20 onclick="send_clicked()"><br>
 <input type="button" value="start" onclick="start_clicked()" /><br>
 <input type="button" id="auto" value="auto" onclick="auto_clicked()" /><br>
 
@@ -85,7 +83,7 @@ function init_auto(){
     console.log('init_auto')
     // 訪問時 or OFF->ON
     auto = 1
-    auto_button_style = "background-color: blue;"
+    auto_button_style = "background-color: yellow;"
     document.getElementById("auto").style = auto_button_style
 
     auto_mode = 0 // 初期stepモード 失敗確定したら1:調整モードへ以降
@@ -93,7 +91,7 @@ function init_auto(){
     clear_cnt = 0
 }
 
-function auto_clicked(){
+    function auto_clicked(){
     console.log('auto_clicked')
     // 反転
     if (auto == 1){ // ONからOFF
@@ -219,10 +217,6 @@ function play(){
             ans_array[index] = correct
             // 表示
             document.getElementById('num').innerHTML = ''
-            document.getElementById('talk').innerHTML = 'select your answer'
-            document.getElementById('ans1').innerHTML = ans_array[0]
-            document.getElementById('ans2').innerHTML = ans_array[1]
-            document.getElementById('ans3').innerHTML = ans_array[2]
     }
 
     var array = new Array();
@@ -264,6 +258,15 @@ function Date_to_String(date){
     return string
 }
 
+document.getElementById("ans").onkeypress = (e) => {
+  // 入力されたキーを取得
+  const key = e.keyCode || e.charCode || 0;
+  // 13はEnterキーのキーコード
+  if (key == 13) {
+    send_clicked(document.getElementById("ans"))
+  }
+}
+
 function send_clicked(element) {
     console.log('send_clicked')
     get_result(element);
@@ -278,8 +281,8 @@ function send_clicked(element) {
 }
 
 function get_result(element) {
-   // 回答取得
-   ans = element.innerHTML
+    // 回答取得
+    ans = element.value
     ans = parseInt(ans, 10)
 
     // 正誤判定
@@ -292,11 +295,6 @@ function get_result(element) {
 }
 
 function show_result(element) {
-    // 選択肢の表示を消す
-    document.getElementById('ans1').innerHTML = ''
-    document.getElementById('ans2').innerHTML = ''
-    document.getElementById('ans3').innerHTML = ''
-
     // 結果表示
     document.getElementById('talk').innerHTML = judge_str
     if (is_correct==0){
