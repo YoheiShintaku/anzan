@@ -178,34 +178,6 @@ function play(){
     }
 
     function at_end() {
-            // 回答の選択肢を表示
-            // 正解にノイズ付与
-            ans_array = new Array()
-            for (i=0;i<3;i++){                
-                tmp = Math.round(Math.random()*10*0.4) - 2   // -2 ~ 2
-                if (tmp==0){ // 正解と一致させない
-                    if (Math.random()>0.5){
-                        tmp = 1
-                    } else {
-                        tmp = -1
-                    }
-                }
-                value = correct + tmp
-                flg = false
-                for (k=0;k<i;k++){  // 他候補と一致するか
-                    if (value == ans_array[k]){
-                        flg = true
-                    }
-                }
-                if (flg){ // 
-                    i--; // 戻ってもう一度
-                } else {
-                    ans_array.push(value);
-                }
-            }
-            // 一つだけ正解にする
-            index = Math.floor(Math.random() * 3) // 0<=random<1
-            ans_array[index] = correct
             // 表示
             document.getElementById('num').innerHTML = ''
             document.getElementById('ans').focus()
@@ -270,11 +242,15 @@ function send_clicked(element) {
         set_setting_to_document()
     }
     send_result()
+    show_chart()
 }
 
 function get_result(element) {
     // 回答取得
     ans = element.value
+    if (ans==""){
+        ans = -1
+    }
     ans = parseInt(ans, 10)
 
     // 正誤判定
@@ -293,7 +269,6 @@ function show_result(element) {
         document.getElementById('num').innerHTML = judge_str+ "\n" + correct
     } 
     document.getElementById('start').focus()
-    show_chart()
 }
 
 
@@ -438,12 +413,18 @@ function show_chart(){
         var ctx = document.getElementById("chart");
         var type = 'bubble'
         var bubble_data = {
-            datasets: [{
-                data: data,
+            datasets: [
+                {
+                data: data['correct'],
                 backgroundColor: 'rgb(102, 102, 255)',
-                label: 'correct counts'
-                    }]
-        };
+                label: 'correct'
+                },
+                {
+                data: data['try'],
+                backgroundColor: 'rgb(152, 202, 105)',
+                label: 'try'
+                },
+            ]},
 
         options= {
             title: {

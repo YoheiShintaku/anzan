@@ -8,54 +8,6 @@ import pandas as pd
 app = Flask('')
 
 
-def get_db_url():
-    print('get_db_url', file=sys.stderr)
-    return '{database}://{db_user}:{db_password}@{db_host}:{db_port}/{db_use}{param}'.format(
-#            database='mysql+pymysql'
-#            db_user='root',
-#            db_password='',
-#            db_host='127.0.0.1',
-#            db_port='3306',
-#            db_use='anzan',
-#            param='?charset=utf8',
-        database='postgresql',
-        db_user='cguxtnsgsuoano',
-        db_password='db1ddedb395b5394636937c8c056f6986b2e8aef69b4197691f7a489b57b147c',
-        db_host='ec2-18-235-107-171.compute-1.amazonaws.com',
-        db_port='5432',
-        db_use='d7d7jfml0mg7e7',
-        param='',
-    )
-
-
-def get_connect_obj():
-    print('get_connect_obj', file=sys.stderr)
-
-    db_url = get_db_url()  # 'mysql+pymysql://root:@127.0.0.1:3306/test1230?charset=utf8'
-    engine = sqlalchemy.create_engine(db_url)
-    return engine
-
-
-def get_insert_query(table, dct):
-    print('get_insert_query', file=sys.stderr)
-    columns_str = '('
-    values_str = '('
-    for k, v in dct.items():
-        columns_str += f'{k},'
-        if isinstance(v, str):
-            s = f"'{v}'"
-        else:  # 数値
-            s = f'{v}'
-        values_str += f'{s},'
-    columns_str = columns_str[:-1]  # 最後のカンマ除く
-    columns_str += ')'
-    values_str = values_str[:-1]  # 最後のカンマ除く
-    values_str += ')'
-
-    sql = f'INSERT INTO {table} {columns_str} VALUES {values_str}'
-    return sql
-
-
 @app.route('/')
 def index():
     print('index', file=sys.stderr)
@@ -87,11 +39,10 @@ def user_data():  # url for で指定
     print('/user_data', file=sys.stderr)
     table = 'log'
 #    sql = f'select date(t) as d, cast(count(*) as float) as play_cnt, cast(sum(judge) as float) as correct_cnt from {table} group by 1;'
-    sql = f'select date(t) as x, 1 / intervalSec as y, cast(sum(judge) as float) as r from {table} group by 1,2;'
-    print(sql, file=sys.stderr)
-    import pandas as pd
+    sql = f'select date(t) as x, 1 / intervalSec as y, cast(count(*) as float) as play_cnt, cast(sum(judge) as float) as r from {table} where len=10 group by 1,2;'
+#    print(sql, file=sys.stderr)
     engine = get_connect_obj()
-    conn = engine.connect()    
+    conn = engine.connect()
     df = pd.read_sql_query(
         sql=sql, 
         con=conn)
@@ -107,8 +58,12 @@ def user_data():  # url for で指定
     ls = [{'x': sr['x'], 
             'y': sr['y'], 
             'r': sr['r']} for _, sr in df.iterrows()]
+    ls_play = [{'x': sr['x'], 
+            'y': sr['y'], 
+            'r': sr['play_cnt']} for _, sr in df.iterrows()]
 #    print(ls, file=sys.stderr)
-    return jsonify(ls)
+    dct = {'correct': ls, 'try': ls_play}
+    return jsonify(dct)
 
     '''
     # line plot
@@ -120,6 +75,54 @@ def user_data():  # url for で指定
     print(dct, file=sys.stderr)
     return jsonify(dct)
     '''    
+
+
+def get_connect_obj():
+    print('get_connect_obj', file=sys.stderr)
+
+    db_url = get_db_url()  # 'mysql+pymysql://root:@127.0.0.1:3306/test1230?charset=utf8'
+    engine = sqlalchemy.create_engine(db_url)
+    return engine
+
+
+def get_db_url():
+#    print('get_db_url', file=sys.stderr)
+    return '{database}://{db_user}:{db_password}@{db_host}:{db_port}/{db_use}{param}'.format(
+#            database='mysql+pymysql'
+#            db_user='root',
+#            db_password='',
+#            db_host='127.0.0.1',
+#            db_port='3306',
+#            db_use='anzan',
+#            param='?charset=utf8',
+        database='postgresql',
+        db_user='cguxtnsgsuoano',
+        db_password='db1ddedb395b5394636937c8c056f6986b2e8aef69b4197691f7a489b57b147c',
+        db_host='ec2-18-235-107-171.compute-1.amazonaws.com',
+        db_port='5432',
+        db_use='d7d7jfml0mg7e7',
+        param='',
+    )
+
+
+def get_insert_query(table, dct):
+    print('get_insert_query', file=sys.stderr)
+    columns_str = '('
+    values_str = '('
+    for k, v in dct.items():
+        columns_str += f'{k},'
+        if isinstance(v, str):
+            s = f"'{v}'"
+        else:  # 数値
+            s = f'{v}'
+        values_str += f'{s},'
+    columns_str = columns_str[:-1]  # 最後のカンマ除く
+    columns_str += ')'
+    values_str = values_str[:-1]  # 最後のカンマ除く
+    values_str += ')'
+
+    sql = f'INSERT INTO {table} {columns_str} VALUES {values_str}'
+    return sql
 
 
 # 現在不使用 --------------

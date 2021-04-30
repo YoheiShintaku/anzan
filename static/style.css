@@ -20,19 +20,18 @@ body {
 }	
 .outer{
 	display: table;
-	margin: 10px auto;
+	margin: 1px auto;
 }
 
 .q {
 	display: table-cell;
-	width: 600px;
-	height: 400px;
 	vertical-align: middle;
-	background: rgb(43, 219, 247);
-	border: 1px solid #cccccc;
+	text-align: center;
+	width: 600px;
+	height: 500px;
+	background: rgb(43, 229, 247);
 	color: white;
 	font-size: 100px;
-	text-align: center;
 }
 
 .a {
