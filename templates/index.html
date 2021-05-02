@@ -264,10 +264,14 @@ function get_result(element) {
 
 function show_result(element) {
     // 結果表示
-    document.getElementById('num').innerHTML = judge_str
-    if (is_correct==0){
+
+    if (is_correct==1) {
+        document.getElementById('num').innerHTML = judge_str
+    }
+    else if (is_correct==0&ans>=0){
         document.getElementById('num').innerHTML = judge_str+ "\n" + correct
-    } 
+    } else {
+    }
     document.getElementById('start').focus()
 }
 
@@ -419,11 +423,13 @@ function show_chart(){
                 backgroundColor: 'rgb(102, 102, 255)',
                 label: 'correct'
                 },
+                /*
                 {
                 data: data['try'],
                 backgroundColor: 'rgb(152, 202, 105)',
                 label: 'try'
                 },
+                */
             ]},
 
         options= {
